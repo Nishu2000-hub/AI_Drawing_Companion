@@ -171,6 +171,118 @@ The purpose is to test the model’s out-of-bound detection—verifying whether 
 ![.nz file contains](sample_dataset/Figure1.png)
 ![vector stroke representation contains](sample_dataset/Figure2.png)
 
+# Part 3: First Update
+
+## Introduction
+
+This update documents our progress on the Interactive AI Drawing Companion project, summarizing our work so far, presenting preliminary experimental results, and outlining the challenges we have encountered. We have pushed our current codebase to our GitHub repository, which includes data processing scripts, a pipeline for converting Sketch-RNN vector data into raster images, a script to split these images into training, validation, and test sets, and a baseline CNN model trained on the processed images. Our current results show that with a limited dataset per category, our model achieves a Test Loss of approximately 1.39 and a Test Accuracy of around 26%. Although these results are modest, they serve as an essential starting point for further refinement and exploration.
+
+This update describes:
+- Our data acquisition and preprocessing process,
+- The current state of our baseline model and experimental outcomes,
+- Specific challenges we face in terms of generalization, overfitting, real-time inference, and out-of-bound (OOD) detection,
+- Our plans for addressing these challenges in future iterations.
+
+## Data Acquisition and Preprocessing
+
+### Dataset Overview
+
+We are using the Sketch-RNN QuickDraw Dataset, which is a preprocessed subset of Google’s Quick, Draw! dataset. The dataset is provided in compressed `.npz` files—one per category (e.g., `cat.npz`, `dog.npz`)—each containing three splits:
+- **train:** ~70,000 sketches per category.
+- **valid:** ~2,500 sketches per category.
+- **test:** ~2,500 sketches per category.
+
+Our initial work focused on processing these files to convert the vector sketches into raster images. The conversion process adheres to the following steps:
+1. **Alignment:** The sketches are aligned so that the minimum x and y coordinates are at 0.
+2. **Scaling:** The sketches are uniformly scaled to fit within a 256×256 coordinate region.
+3. **Resampling:** Strokes are resampled to ensure a consistent spacing (approximately 1 pixel).
+4. **Simplification:** The Ramer–Douglas–Peucker (RDP) algorithm is applied with an epsilon value of 2.0 to reduce noise and redundant points.
+
+We successfully generated 100 images per category (from the ‘train’ split) and stored them in a `processed_images` folder, organized by category. To facilitate model training using standard deep learning libraries (e.g., Keras), we then re-split these images into a new dataset directory using a 60/20/20 split (train/valid/test).
+
+### Directory Structure
+
+After splitting, our dataset is organized as follows:
+dataset/ train/ cat/ cat_00000.png cat_00001.png ... dog/ dog_00000.png ... valid/ cat/ cat_00060.png ... test/ cat/ cat_00080.png ...
+
+This structure allows us to easily use Keras’ `ImageDataGenerator` for model training and evaluation.
+
+## Baseline Model Development
+
+### CNN Architecture
+
+We built a simple Convolutional Neural Network (CNN) to serve as a baseline for sketch classification. Our architecture consists of the following layers:
+- **Input Layer:** Accepts grayscale images resized to 64×64 (downscaled from 256×256 for faster training).
+- **Convolutional Layers:** Three Conv2D layers with increasing numbers of filters (32, 64, 128) and ReLU activations.
+- **Pooling Layers:** MaxPooling2D layers are interleaved between convolutional layers to reduce spatial dimensions.
+- **Fully Connected Layers:** A flattening layer followed by a dense layer with 128 neurons and dropout regularization.
+- **Output Layer:** A dense layer with softmax activation to predict the probability distribution over the classes.
+
+### Model Training and Evaluation
+
+We used Keras’ `ImageDataGenerator` to load our dataset from the structured directories. Data augmentation (rotations, shifts, horizontal flips) was applied to the training data to improve generalization. The model was trained for 10 epochs with a batch size of 32 using the Adam optimizer and categorical crossentropy as the loss function.
+
+After training, the model was evaluated on the test set, achieving:
+- **Test Loss:** ~1.39
+- **Test Accuracy:** ~26%
+
+These results indicate that, while the model is able to learn basic features from the limited dataset, its accuracy is currently quite low. This is expected given the limited number of samples per category and the inherent complexity of hand-drawn sketches.
+
+## Challenges Encountered
+
+### 1. Subject-Disjoint Data Splitting
+
+As professor has highlighted the importance of subject-disjoint splits to improve generalization. The Sketch-RNN dataset metadata not have explicit user IDs, which complicates this task. We are considering the following approaches:
+- **Using Proxy Variables:** Leveraging metadata such as `countrycode` and `timestamp` to infer groups of sketches that might originate from the same subject or session.
+- **Future Data Collection:** Exploring possibilities for integrating additional metadata in future versions of the dataset to enable true subject-disjoint splits.
+
+### 2. Real-Time Inference Latency
+
+A significant goal of our project is to provide real-time probabilistic feedback as users draw. Although our current work is focused on offline model training, our eventual aim is to integrate the model into a real-time interface. Current challenges include:
+- **Preprocessing Overhead:** Converting drawing inputs into a format suitable for the model in real time.
+- **Model Inference Time:** Ensuring the CNN model runs quickly enough to provide instant feedback. We are exploring asynchronous processing, model quantization, and lighter network architectures to reduce latency.
+
+### 3. Out-of-Bound (OOD) Detection
+
+Integrating OOD detection into our system is crucial for handling sketches that fall outside the known categories. Although our current model does not yet incorporate OOD detection, we are actively researching several methods:
+- **Confidence Thresholding:** Flagging inputs as “unknown” when the softmax probability of the top class falls below a threshold.
+- **Advanced Methods:** Exploring techniques such as OpenMax and Monte Carlo dropout to quantify uncertainty.
+- **Autoencoder-Based Methods:** Considering training an autoencoder on known sketches and using reconstruction error to detect anomalies.
+
+Balancing these techniques with real-time requirements remains an ongoing challenge.
+
+### 4. User Interface and Interactive Feedback
+
+While our primary focus so far has been on data processing and model training, developing an intuitive user interface is also a priority. Our planned UI will:
+- **Display Live Predictions:** Show a dynamically updating probability distribution as users draw.
+- **Provide Clear Feedback:** Clearly indicate recognized classes and flag uncertain or unknown inputs.
+- **Integrate OOD Detection:** Eventually incorporate OOD indicators to prompt users when a drawing falls outside the known categories.
+
+Designing and testing this UI will require iterative refinement based on user feedback.
+
+## Future Work
+
+Based on our current progress and the challenges encountered, our next steps include:
+
+1. **Subject-Disjoint Splitting:**  
+   - Further investigate the use of proxy variables (e.g., countrycode, timestamp) to create subject-disjoint splits.
+   - Plan for future dataset enhancements that include explicit subject metadata.
+2. **Model Improvements:**  
+   - Experiment with deeper or hybrid architectures (e.g., combining CNNs and RNNs) to better capture the sequential nature of stroke data.
+   - Continue hyperparameter tuning and incorporate additional regularization techniques.
+    
+3. **User Interface Development:**  
+   - Develop a prototype UI that displays real-time predictions and gathers user feedback.
+   - Iteratively refine the UI based on usability testing.
+4. **Real-Time Inference Optimization:**  
+   - Optimize the preprocessing pipeline to reduce latency.
+   - Explore techniques such as model quantization and asynchronous processing to ensure the model can run in real time.
+
+5. **Advanced OOD Detection:**  
+   - Prototype multiple OOD detection methods and integrate the most promising approach into the model.
+   - Evaluate OOD performance using dedicated metrics like AUROC, precision, and recall.
+
+
 
 ## Conclusion
 
