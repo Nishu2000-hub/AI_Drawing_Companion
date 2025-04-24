@@ -280,7 +280,7 @@ Based on our current progress and the challenges encountered, our next steps inc
 
 5. **Advanced OOD Detection:**  
    - Prototype multiple OOD detection methods and integrate the most promising approach into the model.
-   - Evaluate OOD performance using dedicated metrics like AUROC, precision, and recall.
+   - Evaluate OOD performance using dedicated metrics like AUROC
 
 
 # 🖌️Part4
@@ -317,7 +317,7 @@ We used a two-layer LSTM (512 hidden units, dropout 0.5) trained on stroke-seque
 
 ---
 
-## 🔄 Incremental Learning Evaluation
+##  Incremental Learning Evaluation
 
 Two configurations were tested for incremental learning:
 
@@ -326,18 +326,17 @@ Two configurations were tested for incremental learning:
 - **New classes per step**: 10  
 - **Final test accuracy**: **35.7%**
 
-> ⚠️ Severe catastrophic forgetting occurred. The model failed to retain earlier knowledge.
+> ⚠ Severe catastrophic forgetting occurred. The model failed to retain earlier knowledge.
 
 ### 🔹 Configuration 2: Improved
 - **Memory**: 50 exemplars per class  
 - **New classes per step**: 5  
 - **Final test accuracy**: **~60.0%**
 
-> ✅ The larger memory and smaller task size helped significantly retain prior knowledge.
+>  The larger memory and smaller task size helped significantly retain prior knowledge.
 
 ---
 
-## 📏 Chosen Performance Metrics
 
 ## 📏 Evaluation Metrics & Observations
 
@@ -367,7 +366,7 @@ Two configurations were tested for incremental learning:
 
 ---
 
-## 💬 Commentary on Observed Accuracy
+##  Commentary on Observed Accuracy
 
 - **Base accuracy (92.6%)**: Strong generalization and minimal overfitting.
 - **Naïve incremental (35.7%)**: Significant forgetting due to limited memory and large task increments.
