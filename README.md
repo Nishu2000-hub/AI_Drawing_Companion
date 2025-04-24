@@ -395,7 +395,15 @@ Two configurations were tested for incremental learning:
 
 
 ### Once clone, you can run : 
+git clone <repo>
+cd sketchrnnnpz
 pip install -r requirements.txt
 
-#  Validate a single sample
-python single_valid.py
+# Single validation sample
+python single_valid.py --index 0
+
+# Launch interactive GUI
+python inference.py
+
+# Full evaluation & plots
+python evaluate.py
