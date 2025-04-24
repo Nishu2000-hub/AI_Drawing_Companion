@@ -1,0 +1,7 @@
+numpy>=1.19
+torch>=1.10
+scikit-learn>=0.24
+matplotlib>=3.3
+tqdm>=4.50
+python-pptx>=0.6.19
+Pillow>=8.0
