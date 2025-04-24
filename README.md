@@ -283,8 +283,120 @@ Based on our current progress and the challenges encountered, our next steps inc
    - Evaluate OOD performance using dedicated metrics like AUROC, precision, and recall.
 
 
+# 🖌️Part4
 
-## Conclusion
+## 📘 Overview
 
-This project seeks to blend advanced neural network techniques with interactive design principles to create a unique and engaging drawing game. By leveraging the extensive Quick, Draw! dataset and incorporating advanced out-of-bound detection methods—such as confidence thresholding, uncertainty estimation, the system is designed to handle both typical and novel inputs robustly. As the project evolves, additional refinements and potential multimodal integrations may be considered to further enhance both the technical performance and the overall user experience.
+This repository presents a full implementation of an interactive sketch recognition system capable of:
 
+1. **Classifying** hand-drawn sketches from an initial set of 50 categories with high accuracy.  
+2. **Detecting unknown** (out-of-distribution) sketches using energy-based scoring and softmax confidence thresholds.  
+3. **Learning new classes on the fly** via a one-shot incremental learning pipeline (using exemplar replay and knowledge distillation) without catastrophic forgetting.  
+
+All components—from data preprocessing and training to incremental updates and a Tkinter-based GUI—are provided.
+
+
+## 🧪 Training & Validation Accuracy
+
+We used a two-layer LSTM (512 hidden units, dropout 0.5) trained on stroke-sequence data from Google’s Quick, Draw! Sketch-RNN dataset, subsampled to 50 classes.
+
+**Dataset Split per class:**
+- **Train**: 70,000 samples  
+- **Validation**: 2,500 samples  
+- **Test**: 2,500 samples  
+
+### Base Model Performance
+
+| Dataset     | Accuracy  |
+|-------------|-----------|
+| **Train**   | 94.31 %   |
+| **Validation** | 92.57 %   |
+
+> 🔍 **Interpretation**:  
+> A ~2% train-validation gap indicates mild overfitting. The validation accuracy above 90% shows that the model generalizes well on unseen sketches.
+
+---
+
+## 🔄 Incremental Learning Evaluation
+
+Two configurations were tested for incremental learning:
+
+### 🔸 Configuration 1: Naïve
+- **Memory**: 20 exemplars per class  
+- **New classes per step**: 10  
+- **Final test accuracy**: **35.7%**
+
+> ⚠️ Severe catastrophic forgetting occurred. The model failed to retain earlier knowledge.
+
+### 🔹 Configuration 2: Improved
+- **Memory**: 50 exemplars per class  
+- **New classes per step**: 5  
+- **Final test accuracy**: **~60.0%**
+
+> ✅ The larger memory and smaller task size helped significantly retain prior knowledge.
+
+---
+
+## 📏 Chosen Performance Metrics
+
+## 📏 Evaluation Metrics & Observations
+
+### ✅ 1. Classification Accuracy
+- **Formula**:  
+  ```python
+  accuracy = correct_predictions / total_samples
+  ```
+
+---
+
+### ✅ 2. Confusion Matrix
+- **Why**: To visualize misclassifications and track forgetting patterns.
+- **Usage**: Plotted as a heatmap, saved at `plots/confusion_matrix.png`.
+
+---
+
+### ✅ 3. ROC AUC for OOD Detection
+- **Why**: Suitable for binary classification (known vs. unknown).
+- **AUC Achieved**: **0.87**
+
+---
+
+### 🔧 4. (Planned) Expected Calibration Error (ECE)
+- **Purpose**: To assess how well softmax confidence aligns with true accuracy.
+- **Status**: To be evaluated in future updates.
+
+---
+
+## 💬 Commentary on Observed Accuracy
+
+- **Base accuracy (92.6%)**: Strong generalization and minimal overfitting.
+- **Naïve incremental (35.7%)**: Significant forgetting due to limited memory and large task increments.
+- **Improved incremental (60%)**: Substantial recovery with better memory management and task design.
+- **OOD detection (AUC = 0.87)**: A strong baseline that can be further improved with advanced scoring techniques.
+
+---
+
+## 💡 Ideas for Further Improvements
+
+### 🔄 1. Contrastive Clustering Loss
+- **Inspired by**: Open-world recognition methods.
+- **Goal**: Encourage intra-class compactness and inter-class separation in feature space.
+
+---
+
+### 🔁 2. Tune Knowledge Distillation Weight (λ)
+- **Strategy**: Increase λ (e.g., 2.0–5.0) to strengthen old model behavior retention.
+
+---
+
+### 🔀 3. Replay Data Augmentation
+- **Techniques**: Apply rotation, jitter, or noise to exemplars in memory.
+- **Benefit**: Prevents overfitting to static replay samples.
+
+
+
+### Once clone, you can run : 
+pip install -r requirements.txt
+
+#  Validate a single sample
+python single_valid.py
