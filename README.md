@@ -373,7 +373,112 @@ Two configurations were tested for incremental learning:
 - **Improved incremental (60%)**: Substantial recovery with better memory management and task design.
 - **OOD detection (AUC = 0.87)**: A strong baseline that can be further improved with advanced scoring techniques.
 
+--
+
+# Part 4: Final Test‐Set Evaluation
+
+## 1. Description of the Test Database
+
+For our final evaluation, we used the **“test” split** from the same 50‐category subset of QuickDraw Sketch-RNN `.npz` files that powered our training and validation.  
+
+- **Size**  
+  - **50 categories** × **2 500 sketches per class** = **125 000 total samples**.  
+  - Each sample is a variable‐length sequence of Δx, Δy, pen‐lift triplets, padded/truncated to 150 timesteps.
+
+- **Differences from Training & Validation**  
+  - **Disjoint samples:** none of the sketches in “test” appear in “train” or “valid.”  
+  - **Same generation process:** strokes come from the same QuickDraw pipeline, with identical RDP simplification and preprocessing.  
+
+- **Why it tests generalization**  
+  1. **Unseen strokes:** even within the same category, artists draw in wildly different styles, stroke orders, and levels of detail. The test set simulates real‐world variation.  
+  2. **Balanced classes:** each category contributes equally, so we measure per‐class performance rather than letting frequent classes dominate.  
+  3. **Large scale:** 125 k samples provide statistically meaningful accuracy estimates and reveal subtle inter-class confusions that smaller splits might hide.
+
 ---
+
+## 2. Classification Accuracy on the Test Set
+
+We report **closed‐set accuracy** on the final incremental model (memory = 50 exemplars, task size = 5). In addition, we include the **OOD detection AUC** for completeness, although OOD samples are not part of this closed‐set evaluation.
+
+| Metric                          | Value    |
+|---------------------------------|----------|
+| **Closed‐set Test Accuracy**    | **60.2 %** |
+| **OOD ROC AUC**                 | 0.87     |
+
+> **How it was measured**  
+> 1. We loaded the saved checkpoint `models/final_incremental.pth`.  
+> 2. We instantiated a `CombinedSketchDataset(..., split="test")` and a `DataLoader` with `batch_size=128` and `num_workers=0`.  
+> 3. We ran inference across all 125,000 samples, recorded the top‐1 predictions, and compared them to the true labels.  
+> 4. The fraction of correct predictions gives our 60.2 % accuracy.
+
+---
+
+## 3. Why Performance Drops on the Test Set
+
+It is normal—and expected—for test‐set accuracy to be lower than the very high train/validation scores (94.3 % train, 92.6 % valid). In our case, the drop to ~60 % arises from several factors:
+
+1. **Catastrophic forgetting during incremental updates**  
+   - Although our improved strategy recovers much old‐class performance, there is still residual forgetting: early classes suffer some drift when many new classes are added in sequence.  
+   - The confusion matrix (see slide) shows that certain categories (e.g., “Eiffel Tower” vs. “broom” or “bowtie”) remain systematically confused.
+
+2. **Over‐confidence & mis‐calibration**  
+   - Our softmax outputs often declare near‐100 % confidence even on wrong labels, which prevents the model from “hedging its bets.”  
+   - Over‐confident misclassifications inflate error when the net is forced to pick one of 50 classes.
+
+3. **Inherent sketch variability**  
+   - QuickDraw sketches vary wildly in abstraction: some Eiffel Tower sketches are highly detailed, others are minimal.  
+   - Our LSTM, trained on sequences of fixed maximum length, may truncate or pad crucial pen‐lift markers that differentiate similar shapes.
+
+4. **Limited replay memory**  
+   - Even with 50 exemplars, the replay buffer may not fully capture the full stroke‐order permutations of all 50 classes.  
+   - As a result, the model still skews toward classes with more distinctive or consistently drawn strokes.
+
+
+
+### 3.1 Illustrative Examples
+
+Below are three real test‐set misclassifications that highlight these failure modes:
+
+| Index | True Label        | Predicted Label | Confidence | Notes                                          |
+|-------|-------------------|-----------------|------------|------------------------------------------------|
+| 2     | The Eiffel Tower  | broom           | 99.7 %     | Both have a long vertical shaft + angled top.  |
+| 3     | The Eiffel Tower  | bowtie          | 54.4 %     | Minimal tower sketch confused with bow shape.  |
+
+These illustrate:
+- **Structural ambiguity** (tower vs. broom)  
+- **Calibration issues** (high confidence on wrong)  
+---
+
+## 4. Proposed Improvements to Lower Error Rates
+
+To narrow the gap between our current ~60 % test accuracy and the ~92 % validation ceiling, we plan the following enhancements:
+
+1. **Contrastive Clustering Loss**  
+   - Enforce tighter intra‐class clusters and wider inter‐class margins in feature space:  
+   - This will help the model distinguish “tower” strokes from “broom” arcs even when shapes overlap.
+
+2. **Temperature Scaling for Calibration**  
+   - Post‐train, fit a scalar temperature \(T\) on validation logits so that softmax confidences better reflect true accuracy.  
+   - Improves both closed‐set reliability and OOD detection.
+
+3. **Augmented Replay Buffer**  
+   - Apply jitter/rotation/random stroke‐order perturbations to replay exemplars so the old‐class memory is more diverse.  
+   - Prevents overfitting to a small static set of 50 sequences per class.
+
+4. **Adaptive Learning Rates per Incremental Step**  
+   - Use cosine‐annealing or warm restarts within each task‐step so the model makes controlled adjustments to weights, reducing drift.
+
+5. **Ensemble of Teachers**  
+   - Keep not just one old model but an ensemble of the last few checkpoints as “teachers,” and distill their consensus—this has been shown to stabilize incremental updates.
+
+---
+
+## 5. Summary
+
+- **Test‐set accuracy:** 60.2 % (down from 92.6 % valid)  
+- **Key failure modes:** catastrophic forgetting, over‐confidence, shape ambiguity  
+- **Next steps:** contrastive loss, calibration, augmentations, adaptive LR, stronger distillation  
+
 
 ## 💡 Ideas for Further Improvements
 
