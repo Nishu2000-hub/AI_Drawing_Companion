@@ -505,7 +505,10 @@ cd sketchrnnnpz
 pip install -r requirements.txt
 
 # Single validation sample
-python single_valid.py --index 0
+python single_valid.py   //can use -i index 0
+
+# Single test sample
+python single_test.py
 
 # Launch interactive GUI
 python inference.py
