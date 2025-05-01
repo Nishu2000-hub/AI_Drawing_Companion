@@ -25,14 +25,14 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.set_num_threads(4)
 
 
-DATA_DIR      = r"C:\Users\khand\AppData\Local\Google\Cloud SDK\sketchrnnnpz\data\subsampledv1"
-CHECKPOINT    = r"C:\Users\khand\AppData\Local\Google\Cloud SDK\sketchrnnnpz\models\final_incremental.pth"
+DATA_DIR      = r"data\subsampledv1"
+CHECKPOINT    = r"models\final_incremental.pth"
 PAD_LENGTH    = 150
-UNKNOWN_DIR   = r"C:\Users\khand\AppData\Local\Google\Cloud SDK\sketchrnnnpz\data\unknown"
+UNKNOWN_DIR   = r"data\unknown"
 CONF_THRESHOLD   = 0.40
 ENERGY_THRESHOLD = 6.681478602899007
 BATCH_SIZE    = 128
-PLOTS_DIR     = r"C:\Users\khand\AppData\Local\Google\Cloud SDK\sketchrnnnpz\plots"
+PLOTS_DIR     = r"plots"
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
 
