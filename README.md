@@ -501,7 +501,6 @@ To narrow the gap between our current ~60 % test accuracy and the ~92 % validati
 
 ### Once clone, you can run : 
 git clone <repo>
-cd sketchrnnnpz
 pip install -r requirements.txt
 
 ### Data Download: 
