@@ -504,6 +504,11 @@ git clone <repo>
 cd sketchrnnnpz
 pip install -r requirements.txt
 
+### Data Download: 
+
+Please download the data/subsampled/ files by following the instructions in data/README.md
+
+
 # Single validation sample
 python single_valid.py   //can use -i index 0
 
